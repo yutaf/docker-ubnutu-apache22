@@ -1,0 +1,10 @@
+.*
+!.gitignore
+!.envrc
+!.dockerignore
+www/logs/access/
+!www/logs/access/.gitignore
+www/logs/app/
+!www/logs/app/.gitignore
+www/logs/error/
+!www/logs/error/.gitignore

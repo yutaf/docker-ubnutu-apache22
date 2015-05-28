@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+
+VERSION="0.1.0"
+DOCKER_HOST_VAGRANT_ID=${DOCKER_HOST_VAGRANT_ID:=}
+
+#
+# Output usage information.
+#
+usage() {
+  cat <<-EOF
+
+  Usage: vd [options] [command]
+
+  Options:
+
+    -v, --version        output program version
+    -h, --help           output help information
+
+  Commands:
+
+    up                   up vagrant with docker provider
+    ssh                  ssh into docker host vm
+    destroy              destroy docker host & docker
+
+EOF
+}
+
+#
+# Abort with <msg>
+#
+
+abort() {
+  echo "  $@" 1>&2
+  exit 1
+}
+
+#
+# Log <msg>.
+#
+
+log() {
+  echo "  ○ $@"
+}
+
+#
+# Output version.
+#
+
+version() {
+  echo $VERSION
+}
+
+#
+# config
+#
+
+config() {
+  type vagrant > /dev/null 2>&1 || abort "vagrant is not installed"
+  vagrant_version=$(vagrant -v | sed "s/Vagrant //")
+  #TODO check vagrant version greater than 1.6.0
+}
+
+#
+# up
+#
+
+up() {
+  # VAGRANT_DEFAULT_PROVIDER env is set
+  vagrant up
+  if test $? -eq 0; then
+    set_docker_host_vagrant_id
+  fi
+}
+
+#
+# ssh
+#
+ssh() {
+  if test -z "$DOCKER_HOST_VAGRANT_ID"; then
+    set_docker_host_vagrant_id
+  fi
+  vagrant ssh "$DOCKER_HOST_VAGRANT_ID"
+}
+
+#
+# destroy
+#
+destroy() {
+  # vagrant reload で docker の vagrant_id が変更されることがあるため、必ず vagrant global-status 経由で id を取得するようにする。
+  vagrant_global_status_current_dir="$(vagrant global-status | grep $(pwd))"
+  docker_host_vagrant_id="$(echo "$vagrant_global_status_current_dir" | awk '/docker_host/ { print $1 }')"
+  docker_vagrant_id="$(echo "$vagrant_global_status_current_dir" | awk '/my_docker/ { print $1 }')"
+  test -n "$docker_vagrant_id" && vagrant destroy "$docker_vagrant_id" -f
+  test -n "$docker_host_vagrant_id" && vagrant destroy "$docker_host_vagrant_id" -f
+  if type direnv > /dev/null 2>&1; then
+    # clear vagrant id envs
+    clear_vagrant_id_envs
+    direnv allow .
+  fi
+}
+
+#
+# set docker and docker host vagrant id
+#
+set_docker_host_vagrant_id() {
+  vagrant_global_status_current_dir="$(vagrant global-status | grep $(pwd))"
+  docker_host_vagrant_id="$(echo "$vagrant_global_status_current_dir" | awk '/docker_host/ { print $1 }')"
+  if type direnv > /dev/null 2>&1; then
+    # set environment variables
+
+    # clear
+    clear_vagrant_id_envs
+    # set env
+    echo export DOCKER_HOST_VAGRANT_ID=$docker_host_vagrant_id >> .envrc.mutable
+    direnv allow .
+  else
+    # set global variables only avaialble in a session
+    DOCKER_HOST_VAGRANT_ID=$docker_host_vagrant_id
+  fi
+}
+
+#
+# clear_vagrant_id_envs
+#
+clear_vagrant_id_envs() {
+  if test -f .envrc.mutable; then
+    if [ "$(uname -s)" = "Darwin" ]; then
+      sed -i '' '/VAGRANT_ID/d' .envrc.mutable
+    else
+      sed -i '/VAGRANT_ID/d' .envrc.mutable
+    fi
+  fi
+}
+
+
+#
+# start process
+#
+
+# cd to project root
+PROJECT_ROOT=$(dirname $(dirname $0))
+cd $PROJECT_ROOT
+
+# parse argv
+
+if test $# -eq 0; then
+  usage; exit 1
+fi
+
+while test $# -ne 0; do
+  arg=$1; shift
+  case $arg in
+    -h|--help) usage; exit ;;
+    -v|--version) version; exit ;;
+    up) config; up; exit ;;
+    ssh) config; ssh; exit ;;
+    destroy) config; destroy; exit ;;
+
+    *)
+       usage; exit 1 ;;
+#      if test -z "$ENV"; then
+#        ENV=$arg;
+#      else
+#        REF="$REF $arg";
+#      fi
+#      ;;
+  esac
+done
