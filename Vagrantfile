@@ -15,10 +15,18 @@ Vagrant.configure("2") do |config|
     d.create_args = ["--cap-add=SYS_ADMIN","-p","80:80"]
 #    d.create_args = ["--cap-add=SYS_ADMIN","-p","8080:80"]
   end
+
+  #
+  # synced_folder
+  #
+
   # disable default synced_folder
   config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  # none
+#  config.vm.synced_folder "www/", "/srv/www"
   # nfs
   config.vm.synced_folder "www/", "/srv/www", type: "nfs"
   # rsync
-#  config.vm.synced_folder "www/", "/srv/www", type: "rsync", rsync__args: ["-rlpDvcK"]
+#  config.vm.synced_folder "www/", "/srv/www", type: "rsync", rsync__args: ["-rlpDvcK", "--delete", "--safe-links"]
 end
