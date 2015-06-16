@@ -1,3 +1,5 @@
-.*
+.git
+.vagrant
+www/.git
 README.md
 Vagrantfile*
