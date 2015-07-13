@@ -85,5 +85,5 @@ RUN echo '00 5 1,15 * * find /srv/www/logs -regex ".*/\.[^/]*$" -prune -o -type 
 COPY scripts/run.sh /usr/local/bin/run.sh
 RUN chmod +x /usr/local/bin/run.sh
 
-EXPOSE 80 22
+EXPOSE 80
 CMD ["/usr/local/bin/run.sh"]
