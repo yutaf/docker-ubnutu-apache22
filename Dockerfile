@@ -37,7 +37,9 @@ RUN cd /usr/local/src && \
 
 # install
 RUN cd /usr/local/src/httpd-2.2.29 && \
-  make && make install
+  make && make install && \
+  rm -rf /usr/local/src/
+
 
 #
 # Edit config files
