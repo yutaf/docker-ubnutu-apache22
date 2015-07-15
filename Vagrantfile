@@ -1,8 +1,26 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-Vagrant.configure(2) do |config|
-  config.vm.box = "dduportal/boot2docker"
-  config.vm.network "private_network", ip: "192.168.99.99"
-#  config.vm.network "forwarded_port", guest: 80, host: 12345
+Dotenv.load
+
+Vagrant.configure('2') do |config|
+  config.vm.define "my-do-apache" # vagrant machine name
+  config.vm.provider :digital_ocean do |provider, override|
+    override.vm.hostname = "vagrant-my-docker-apache" # droplet name
+    override.ssh.private_key_path = ENV['DO_SSH_KEY']
+    override.vm.box = 'digital_ocean'
+    override.vm.box_url = "https://github.com/smdahlen/vagrant-digitalocean/raw/master/box/digital_ocean.box"
+
+    provider.token = ENV['PERSONAL_TOKEN']
+    provider.image = ENV['DO_IMAGE']
+    provider.region = 'sgp1'
+    provider.size = ENV['DO_SIZE']
+    provider.ssh_key_name = 'vagrant'
+  end
+  config.vm.provision :shell do |s|
+    s.inline = <<-EOT
+      cp /vagrant/templates/ssh/github_id_rsa /root/.ssh/id_rsa
+      chmod 600 /root/.ssh/id_rsa
+    EOT
+  end
 end
