@@ -1,7 +1,7 @@
 .*
 !.gitignore
-!.envrc
-!.dockerignore
+/templates/ssh/*
+!/templates/ssh/.gitignore
 www/logs/access/
 !www/logs/access/.gitignore
 www/logs/app/
